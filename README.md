@@ -79,18 +79,8 @@ This methodology aims to replicate the work of a Junior Azure Administrator in a
 
 ## Project Roadmap
 
-- [x] Azure Governance
-- [x] Microsoft Entra ID
-- [x] Azure RBAC
-- [ ] Azure Storage
-- [ ] Virtual Machines
-- [ ] Azure Networking
-- [ ] Load Balancing
-- [ ] Azure Monitor
-- [ ] Backup & Recovery
-- [ ] Azure Automation
-- [ ] Final Architecture Review
-
+- [Identity and Governance](./implementations/01-identity-governance/README.md)
+- 
 ---
 
 ## Documentation
