@@ -1,88 +1,195 @@
-# Identity and Governance
+# Identity & Governance
 
-## Business Scenario
+This implementation establishes the identity, governance and access control foundation for the Nivor Systems Azure environment.
 
-Nivor Systems required an initial Azure identity and governance foundation before deploying production workloads.
+---
 
-The environment needed centralized identity management, role-based access control, cost visibility and governance controls designed around the principle of least privilege.
+# Business Scenario
 
-## Implemented Components
+Before deploying production workloads, Nivor Systems required a secure and scalable Azure foundation.
 
-- Microsoft Entra ID users
-- Microsoft Entra ID security groups
-- Azure RBAC assignments
-- Azure subscription budget and alerts
+The primary objectives were:
+
+- Centralize identity management.
+- Implement Role-Based Access Control (RBAC).
+- Establish governance controls.
+- Enforce resource tagging.
+- Monitor cloud spending.
+- Follow the Principle of Least Privilege.
+
+---
+
+# Architecture Overview
+
+The following components were implemented:
+
+- Microsoft Entra ID
+- Microsoft Entra Security Groups
+- Azure RBAC
+- Azure Policy
 - Azure Resource Group
-- Resource tags
-- Azure Policy assignment
+- Resource Tags
+- Azure Budget
+- Azure Resource Graph
+- Azure Advisor
 
-## Identity Design
+---
 
-| Security group | Assigned role | Scope | Purpose |
-|---|---|---|---|
-| Azure-Admins | Contributor | Subscription | Manage Azure resources without managing access |
-| IT-Support | Reader | Subscription | Inspect resources and assist with troubleshooting without making changes |
+# Identity Design
 
-Permissions were assigned to security groups rather than directly to individual users.
+RBAC permissions are assigned to Microsoft Entra security groups instead of individual users.
 
-## Governance
+| Security Group | Azure Role | Scope | Purpose |
+|---------------|------------|-------|---------|
+| Azure-Admins | Contributor | Subscription | Manage Azure resources without modifying access permissions |
+| IT-Support | Reader | Subscription | Inspect Azure resources without making changes |
+
+This approach simplifies administration while following Microsoft's recommended RBAC practices.
+
+![RBAC Assignments](./images/rbac-assignments.png)
+
+---
+
+# Governance
 
 The following governance controls were implemented:
 
-- Monthly Azure budget with actual and forecasted alerts
-- Resource classification through tags
-- Azure Policy to require the `Environment` tag
-- Centralized production Resource Group in Switzerland North
+- Monthly Azure Budget (USD 30)
+- Actual and Forecast budget alerts
+- Mandatory resource tagging through Azure Policy
+- Standardized resource naming
+- Production Resource Group located in **Switzerland North**
 
-## Technical Decisions
+![Budget Configuration](./images/budget.png)
 
-### Contributor instead of Owner
+![Azure Policy](./images/policy.png)
 
-The `Azure-Admins` group received the Contributor role because administrators need to manage resources but should not automatically be able to modify RBAC assignments.
+---
 
-### Group-based access
+# Resource Classification
 
-RBAC roles were assigned to Microsoft Entra security groups. New administrators or support staff can therefore receive the correct permissions by changing group membership.
+Resources are classified using Azure Tags.
 
-### Subscription-level scope
+Current tags include:
 
-The current assignments were applied at subscription level because the laboratory contains a single controlled Azure environment. A production implementation with multiple teams and workloads would normally use narrower scopes where possible.
+| Tag | Value |
+|------|-------|
+| Environment | Production |
+| Company | Nivor Systems |
+| CostCenter | IT |
 
-## Security Considerations
+Azure Resource Graph was used to validate the tagging strategy across the environment.
 
-- Principle of least privilege
-- No direct RBAC assignments to normal users
-- No unnecessary Global Administrator assignments
-- Periodic review of elevated access
-- Separation between identity roles and Azure resource roles
+![Resource Graph](./images/resource-graph.png)
 
-## Cost
+---
 
-The identity and governance configuration currently has no meaningful direct Azure consumption cost.
+# Microsoft Entra ID
 
-A monthly budget of CHF 30 was configured for the Pay-As-You-Go laboratory subscription. Budget alerts notify administrators but do not stop or delete resources.
+Administrative access is managed using dedicated security groups.
 
-## Validation
+Groups created:
 
-- Confirmed `Azure-Admins` inherits Contributor permissions through group membership
-- Confirmed `IT-Support` has Reader access
-- Confirmed role assignments use the subscription scope
-- Confirmed Azure Policy assignment exists
-- Confirmed budget alert thresholds and recipient email
+- Azure-Admins
+- IT-Support
 
-## Lessons Learned
+This design allows administrators to grant or revoke Azure permissions simply by modifying group membership.
 
-- Microsoft Entra roles and Azure RBAC roles control different administrative planes.
-- RBAC permissions are inherited down the Azure resource hierarchy.
-- Multiple RBAC assignments are cumulative unless a deny assignment applies.
-- Azure Budget provides notifications, not a hard spending limit.
-- Azure Policy governs resource configuration, while RBAC governs authorization.
+![Microsoft Entra Groups](./images/entra-groups.png)
 
-## If This Were Production
+---
 
-- Use Privileged Identity Management for eligible and time-limited administrative access
-- Require MFA and Conditional Access for privileged identities
-- Reduce RBAC scope to individual Resource Groups or resources when appropriate
-- Implement access reviews
-- Use naming and tagging standards enforced through Azure Policy
-- Maintain emergency access accounts
+# Technical Decisions
+
+## Contributor instead of Owner
+
+The **Contributor** role was assigned to the Azure-Admins group instead of **Owner**.
+
+This allows administrators to manage Azure resources while preventing them from modifying RBAC assignments.
+
+Only the subscription owner retains Owner permissions.
+
+---
+
+## Group-Based Access Control
+
+RBAC permissions are assigned to Microsoft Entra security groups rather than directly to individual users.
+
+This improves scalability and simplifies permission management as the organization grows.
+
+---
+
+## Subscription Scope
+
+Role assignments were configured at the subscription scope because the current environment consists of a single Azure subscription.
+
+In a production environment with multiple workloads, narrower scopes (such as Resource Groups) would typically be preferred.
+
+---
+
+# Security Considerations
+
+The following security principles were applied:
+
+- Principle of Least Privilege
+- Separation between identity management and resource administration
+- RBAC based on Microsoft Entra Security Groups
+- Azure Policy enforcement
+- Budget monitoring
+- Periodic review of privileged access
+
+---
+
+# Cost Management
+
+The governance layer itself generates little or no Azure consumption cost.
+
+A monthly budget of **USD 30** was configured for the Pay-As-You-Go subscription.
+
+Budget alerts notify administrators when spending reaches predefined thresholds.
+
+**Important:** Azure Budgets generate alerts only. They do **not** stop, suspend or delete Azure resources.
+
+---
+
+# Validation
+
+The following configuration was successfully validated:
+
+- Azure-Admins inherits the Contributor role through Microsoft Entra Security Groups.
+- IT-Support inherits the Reader role.
+- RBAC assignments are applied at subscription scope.
+- Azure Policy is assigned and compliant.
+- Resource tagging is successfully enforced.
+- Budget alerts are configured.
+- Azure Resource Graph returns the expected Resource Group inventory.
+
+---
+
+# Lessons Learned
+
+This implementation reinforced several key Azure administration concepts:
+
+- Microsoft Entra roles and Azure RBAC roles manage different administrative planes.
+- RBAC permissions are inherited through the Azure resource hierarchy.
+- Multiple RBAC assignments are cumulative unless a deny assignment exists.
+- Azure Policy governs resource compliance.
+- Azure RBAC governs authorization.
+- Azure Budgets provide visibility into cloud spending but do not enforce spending limits.
+- Azure Resource Graph enables fast inventory and governance queries across Azure resources.
+
+---
+
+# Production Improvements
+
+If this environment were deployed in production, the following improvements would be recommended:
+
+- Implement Microsoft Entra Privileged Identity Management (PIM).
+- Require Multi-Factor Authentication (MFA) for privileged accounts.
+- Implement Conditional Access policies.
+- Reduce RBAC scope wherever possible.
+- Enable Access Reviews.
+- Enforce naming conventions through Azure Policy.
+- Create dedicated Break Glass accounts for emergency access.
+
+---
