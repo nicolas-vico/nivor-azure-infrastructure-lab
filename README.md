@@ -33,6 +33,7 @@ Rather than completing isolated laboratory exercises, this repository documents 
 - Azure RBAC
 - Azure Policy
 - Azure Storage
+- Azure Files
 - Azure Networking
 - Azure Monitor
 - Azure Backup
@@ -49,11 +50,15 @@ Rather than completing isolated laboratory exercises, this repository documents 
 ```text
 .
 ├── README.md
+├── CHANGELOG.md
 ├── LICENSE
-├── implementations/
-│   └── 01-identity-governance/
-├── diagrams/
-└── screenshots/
+└── implementations/
+    ├── 01-identity-governance/
+    │   ├── images/
+    │   └── README.md
+    └── 02-storage/
+        ├── images/
+        └── README.md
 ```
 
 ---
@@ -78,7 +83,7 @@ This methodology is designed to replicate the daily work of a Junior Azure Admin
 ## Project Roadmap
 
 - [x] Identity & Governance
-- [ ] Azure Storage
+- [x] Azure Storage
 - [ ] Azure Compute
 - [ ] Azure Networking
 - [ ] Monitoring & Backup
@@ -90,9 +95,9 @@ This methodology is designed to replicate the daily work of a Junior Azure Admin
 ## Implementations
 
 | Module | Status |
-|---------|--------|
-| Identity & Governance | ✅ Completed |
-| Azure Storage | ⏳ In Progress |
+| --- | --- |
+| [Identity & Governance](implementations/01-identity-governance/README.md) | ✅ Completed |
+| [Azure Storage](implementations/02-storage/README.md) | ✅ Completed |
 | Azure Compute | Planned |
 | Azure Networking | Planned |
 | Monitoring & Backup | Planned |
@@ -122,6 +127,8 @@ Each implementation includes:
 
 The Azure environment currently includes:
 
+### Identity & Governance
+
 - Microsoft Entra ID
 - Security Groups
 - Azure RBAC
@@ -131,6 +138,20 @@ The Azure environment currently includes:
 - Resource Tags
 - Azure Resource Graph
 - Azure Advisor
+
+### Storage
+
+- Azure StorageV2 accounts
+- Azure Blob Storage
+- Azure Files
+- Private blob containers
+- Microsoft Entra ID data access
+- Storage data-plane RBAC
+- Storage access tiers
+- Lifecycle management policies
+- Long-term backup storage
+- Blob soft delete and versioning
+- Secure transfer and TLS configuration
 
 The environment will continue evolving as additional Azure services are implemented.
 
