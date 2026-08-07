@@ -16,6 +16,7 @@ This separation allows each workload to use its own redundancy model, access tie
 
 # Architecture
 
+```text
 rg-production
 │
 ├── stnivweb01
