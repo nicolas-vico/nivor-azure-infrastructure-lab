@@ -1,828 +1,286 @@
-# Azure Storage Architecture
+# 02 — Azure Storage
 
-## Overview
+This implementation extends the Nivor Systems Azure environment with a storage architecture designed around three different business requirements:
 
-Nivor Systems required a storage architecture capable of supporting different enterprise workloads while maintaining security, availability, cost efficiency and clear separation of responsibilities.
+- Web application assets
+- Internal company file sharing
+- Long-term backup storage
 
-Instead of using a single Storage Account for every workload, the storage environment was separated into three accounts based on their access patterns, availability requirements and security needs.
-
-The implementation includes:
-
-- Web application assets using Azure Blob Storage
-- Corporate shared files using Azure Files
-- Long-term backup storage using Azure Blob Storage
-- Microsoft Entra ID authentication
-- Azure RBAC for data-plane authorization
-- User Delegation SAS for temporary access
-- Lifecycle Management policies
-- Storage redundancy strategies
-- Soft delete and versioning
-- Encryption at rest and in transit
-- Resource tagging and governance
+Instead of using a single storage account for every workload, separate StorageV2 accounts were deployed to provide clearer workload separation, independent configuration and better security boundaries.
 
 ---
 
-# Architecture
+## Architecture
 
-```text
-rg-production
-│
-├── stnivweb01
-│   └── Blob Storage
-│       └── web-assets
-│           ├── Private container
-│           ├── Web-Designers RBAC
-│           ├── User Delegation SAS
-│           └── Lifecycle Management
-│
-├── stnivfiles01
-│   └── Azure Files
-│       └── company-share
-│           ├── projects/
-│           ├── shared/
-│           └── templates/
-│
-└── stnivbackup01
-    └── Blob Storage
-        └── general-backups
-            ├── Private container
-            ├── Soft delete
-            ├── Versioning
-            ├── Immutability support
-            └── Lifecycle Management
-```
+| Storage Account | Purpose | Main Resource |
+|---|---|---|
+| `stnivweb01` | Web application assets | `web-assets` blob container |
+| `stnivfiles01` | Internal company files | `company-share` Azure File Share |
+| `stnivbackup01` | Long-term backup storage | `general-backups` blob container |
 
-Each Storage Account was designed independently according to the requirements of its workload.
+All storage accounts are deployed in:
+
+- Resource Group: `rg-production`
+- Region: `Switzerland North`
+- Account type: `StorageV2`
+
+![Storage accounts](images/07-storage-accounts-overview.png)
 
 ---
 
-# Storage Account Design
+# 1. Web Assets Storage
 
-| Storage Account | Service | Redundancy | Access Tier | Purpose |
-|---|---|---|---|---|
-| `stnivweb01` | Azure Blob Storage | LRS | Hot | Web application assets |
-| `stnivfiles01` | Azure Files | ZRS | Transaction Optimized | Corporate shared files |
-| `stnivbackup01` | Azure Blob Storage | GRS | Cold | Long-term backups |
+## Objective
 
-This separation allows each workload to use its own redundancy, security, lifecycle and access configuration.
+Nivor Systems requires centralized object storage for assets used by web workloads.
 
----
-
-# 1. Web Application Storage
-
-## Business Requirement
-
-Nivor Systems requires storage for web application assets such as images, documents and static content.
-
-These objects are accessed frequently and can be recreated or redeployed if necessary.
-
-The main requirements were:
-
-- Low storage cost
-- Fast access
-- Private data by default
-- Controlled developer access
-- Temporary external access when required
-- Automatic lifecycle management
-
-## Implementation
-
-Storage Account:
+The storage account:
 
 `stnivweb01`
 
-Configuration:
-
-- Azure Blob Storage
-- Standard performance
-- Locally Redundant Storage (LRS)
-- Hot access tier
-- Switzerland North region
-- Secure transfer required
-- Minimum TLS 1.2
-- Anonymous Blob access disabled
-- Storage Account Key access disabled
-- Microsoft Entra authorization preferred
-
-A private Blob container was created:
+contains the private Blob Storage container:
 
 `web-assets`
 
+![Web assets container](images/02-web-assets-container.png)
+
+The container was intentionally configured as **Private**.
+
+Anonymous public access is not required. Access to the data should instead be controlled through Microsoft Entra ID and Azure RBAC.
+
 ---
 
-## Web Storage RBAC
+## RBAC
 
-A Microsoft Entra security group was created:
+A Microsoft Entra security group named:
 
 `Web-Designers`
 
-The group received:
+was granted:
 
 `Storage Blob Data Contributor`
 
-The role was scoped specifically to:
+at the **container scope**.
 
-`web-assets`
+![Web assets RBAC](images/03-web-assets-rbac.png)
 
-rather than the complete Storage Account.
+This allows members of the Web-Designers group to read, create, modify and delete blob data without granting unnecessary permissions over the entire storage account.
 
-This ensures that members can manage the required Blob data without automatically receiving access to future containers.
-
-```text
-Web-Designers
-      │
-      │ Storage Blob Data Contributor
-      ▼
-web-assets
-      │
-      ├── Read
-      ├── Write
-      └── Delete
-```
-
-This implementation follows the principle of least privilege.
+This implementation demonstrates the principle of **least privilege** by assigning data-plane permissions at the lowest practical scope.
 
 ---
 
-# Management Plane vs Data Plane
+# 2. Company File Share
 
-During implementation, an important Azure authorization distinction was validated.
+## Objective
 
-Having the `Contributor` role over a Storage Account allows an administrator to manage the Azure resource but does not automatically provide access to the data stored inside it.
+Nivor Systems requires a centralized file share for internal company documents.
 
-```text
-Management Plane
-Contributor
-     │
-     ├── Configure Storage Account
-     ├── Configure networking
-     ├── Manage resource settings
-     └── Deploy resources
-
-Data Plane
-Storage Blob Data Contributor
-     │
-     ├── Read blobs
-     ├── Upload blobs
-     ├── Modify blobs
-     └── Delete blobs
-```
-
-This behavior was validated when access to Blob data was initially denied despite having administrative permissions over the Azure resource.
-
-A dedicated Blob data role was required before the objects could be accessed.
-
----
-
-# Temporary Blob Access
-
-The `web-assets` container remained private.
-
-To provide temporary access to an individual Blob without exposing the entire container, a User Delegation SAS was generated.
-
-The SAS was configured with:
-
-- Read-only permission
-- HTTPS-only access
-- Short expiration period
-- Microsoft Entra ID authorization
-
-Storage Account Key access remained disabled.
-
-```text
-Microsoft Entra ID
-        │
-        ▼
-User Delegation Key
-        │
-        ▼
-Temporary SAS
-        │
-        ▼
-Private Blob
-```
-
-Testing confirmed:
-
-- Direct anonymous Blob URL → Access denied
-- SAS URL → Access granted
-- Container remained private
-
-This avoids distributing Storage Account Keys and provides temporary, scoped access to individual objects.
-
----
-
-# Web Asset Lifecycle Management
-
-A Lifecycle Management policy was configured for:
-
-`web-assets/`
-
-The policy automatically changes storage tiers according to the age of the Blob.
-
-```text
-HOT
- │
- │ 30 days
- ▼
-COOL
- │
- │ 90 days
- ▼
-COLD
- │
- │ 365 days
- ▼
-DELETE
-```
-
-The policy applies only to base Block Blobs under the `web-assets/` prefix.
-
-This prevents the rule from affecting future containers within the same Storage Account.
-
-The lifecycle strategy reduces long-term storage costs while maintaining fast access to recently modified content.
-
----
-
-# 2. Corporate File Storage
-
-## Business Requirement
-
-Nivor Systems requires centralized shared file storage for internal company documents.
-
-Unlike web assets, these files must behave similarly to a traditional enterprise file server.
-
-Azure Files was selected because it provides managed file shares accessible using protocols such as SMB.
-
----
-
-## Implementation
-
-Storage Account:
+The storage account:
 
 `stnivfiles01`
 
-Configuration:
-
-- Azure Files
-- Standard HDD storage
-- Pay-as-you-go file shares
-- Zone-Redundant Storage (ZRS)
-- Switzerland North region
-- Secure transfer required
-- SMB encryption in transit enabled
-- Minimum TLS 1.2
-- Anonymous access disabled
-- Storage Account Key access normally disabled
-- Microsoft Entra authorization preferred
-- Soft delete enabled for file shares
-
-File Share:
+hosts an Azure Files share named:
 
 `company-share`
 
-Directory structure:
+The following directory structure was created:
 
 ```text
 company-share/
+├── IT/
 ├── projects/
 ├── shared/
 └── templates/
 ```
 
----
+![Company file share](images/06-company-file-share.png)
 
-# Azure Files Redundancy
-
-ZRS was selected for the corporate file workload.
-
-ZRS replicates data synchronously across multiple availability zones within the Azure region.
-
-This provides greater resilience than LRS against a datacenter or availability-zone failure while keeping the workload within the same region.
-
-The design intentionally separates infrastructure resilience from backup and recovery mechanisms.
-
-```text
-ZRS
-│
-├── Zone 1
-├── Zone 2
-└── Zone 3
-```
-
-A deletion performed by an authorized user can still be replicated across the redundant copies.
-
-For this reason, redundancy is not considered a replacement for backup or soft-delete capabilities.
+Azure Files was selected because the workload represents a traditional hierarchical company file system rather than object storage.
 
 ---
 
-# Azure Files Authorization
+## Identity and RBAC
 
-A Microsoft Entra security group was created:
+A Microsoft Entra security group named:
 
 `Access-to-shared-files`
 
-Azure Files introduced an additional authorization challenge during the implementation.
+was created for users requiring access to the company share.
 
-Access through Azure Files can involve different authentication and authorization mechanisms depending on whether the data is accessed through SMB, REST APIs or the Azure Portal.
+The group received Azure Files data-plane permissions directly at the `company-share` scope.
 
-The following roles were evaluated during testing:
+Assigned roles include:
 
-- Storage File Data SMB Share Contributor
-- Storage File Data Privileged Contributor
+- `Storage File Data SMB Share Contributor`
+- `Storage File Data Privileged Contributor`
 
-The laboratory demonstrated that Azure resource permissions and Azure Files data permissions are separate authorization layers.
+![Company share RBAC](images/08-company-share-rbac.png)
 
-Identity-based SMB authentication can additionally require configuration of a supported directory service such as:
+Management-plane roles inherited from higher scopes remain separate from the data-plane permissions used to access the actual files.
 
-- Active Directory Domain Services
-- Microsoft Entra Domain Services
-- Microsoft Entra Kerberos
+This distinction is important in Azure:
 
-Because deploying a complete directory authentication architecture was outside the scope of this storage laboratory, Storage Account Key access was temporarily enabled to validate the File Share and create the test directory structure.
-
-After validation, Shared Key access was disabled again.
-
-This troubleshooting process provided practical experience with the distinction between Azure resource management permissions, data-plane permissions and SMB authentication.
+**Management-plane permissions do not automatically grant access to stored data.**
 
 ---
 
 # 3. Backup Storage
 
-## Business Requirement
+## Objective
 
-Nivor Systems requires durable storage for production backups.
+Nivor Systems requires inexpensive storage for backups that are rarely accessed but must remain available for long-term retention.
 
-The workload has different characteristics from the web and corporate file workloads:
-
-- Backups are rarely accessed
-- Recent backups must remain immediately available
-- Historical backups can tolerate slower recovery
-- Data must survive regional infrastructure failures
-- Accidental deletion must be recoverable
-- Long-term storage costs should be minimized
-
----
-
-# Implementation
-
-Storage Account:
+The dedicated storage account:
 
 `stnivbackup01`
 
-Configuration:
-
-- Azure Blob Storage
-- Standard performance
-- Geo-Redundant Storage (GRS)
-- Cold default access tier
-- Switzerland North primary region
-- Secure transfer required
-- Minimum TLS 1.2
-- Anonymous access disabled
-- Storage Account Key access disabled
-- Microsoft Entra authorization preferred
-- Microsoft-managed encryption keys
-
-Container:
+contains:
 
 `general-backups`
 
-Access level:
+A test backup object was uploaded to validate the storage configuration.
 
-`Private`
+![Backup container](images/04-backup-container.png)
 
-Backup administrators require an explicit Blob data-plane role to access the contents.
-
-For laboratory administration:
-
-`Storage Blob Data Contributor`
-
-was assigned at the `general-backups` container scope.
+The workload uses a lower-cost access tier because frequent access is not expected.
 
 ---
 
-# Backup Redundancy
+# 4. Lifecycle Management
 
-GRS was selected because backups have higher durability requirements than web assets.
+Long-term backup data should not remain indefinitely in more expensive storage tiers.
 
-GRS maintains copies in the primary Azure region and asynchronously replicates data to a secondary geographic region.
+A lifecycle management policy named:
 
-This protects against large-scale regional infrastructure failure.
+`backup-lifecycle`
 
-However:
+was therefore configured.
 
-> Redundancy is not backup.
-
-If data is intentionally deleted or modified, those operations can also affect replicated copies.
-
-For this reason, GRS was combined with additional data-protection mechanisms.
-
----
-
-# Backup Data Protection
-
-The following protections were configured:
-
-### Blob Soft Delete
-
-Retention:
-
-`30 days`
-
-Deleted blobs remain recoverable during the retention period.
-
-### Container Soft Delete
-
-Retention:
-
-`30 days`
-
-Deleted containers can be recovered during the configured retention period.
-
-### Blob Versioning
-
-Enabled.
-
-Previous versions of modified blobs are preserved, allowing earlier data states to be recovered.
-
-### Version-Level Immutability Support
-
-Enabled.
-
-This prepares the Storage Account for WORM-style retention policies where Blob versions can be protected against modification or deletion for a defined period.
-
----
-
-# Backup Lifecycle Management
-
-Backups initially use the Cold tier because they are rarely accessed but must remain immediately retrievable.
-
-A lifecycle rule was created for:
+The policy applies only to block blobs matching:
 
 `general-backups/`
 
-```text
-COLD
- │
- │ 180 days
- ▼
-ARCHIVE
- │
- │ 730 days
- ▼
-DELETE
-```
+Lifecycle behavior:
 
-The policy applies only to base Block Blobs under the `general-backups/` prefix.
-
-Recent backups therefore remain online in the Cold tier.
-
-Historical backups are moved to Archive to reduce storage costs.
-
-After two years, expired backups are automatically deleted.
-
----
-
-# Archive and Rehydration
-
-Archive storage is an offline tier.
-
-Archived Blobs cannot be accessed immediately.
-
-Before accessing archived data, the Blob must be rehydrated to an online tier such as Hot or Cool.
-
-```text
-ARCHIVE
-    │
-    │ Rehydrate
-    ▼
-HOT / COOL
-    │
-    ▼
-Data available
-```
-
-Rehydration can take hours and generates additional retrieval costs.
-
-For this reason, Archive is appropriate for historical backups but unsuitable for workloads requiring immediate recovery.
-
-The lifecycle policy also prevents recently rehydrated Blobs from immediately returning to Archive.
-
----
-
-# Security Design
-
-The storage architecture follows several security principles.
-
-## Private by Default
-
-Blob containers were configured without anonymous access.
-
-## Microsoft Entra ID
-
-Microsoft Entra ID and Azure RBAC are preferred over Storage Account Keys wherever possible.
-
-## Shared Key Restrictions
-
-Storage Account Key access was disabled on Blob workloads.
-
-It was temporarily enabled during Azure Files troubleshooting and disabled again after validation.
-
-## Least Privilege
-
-Data roles were scoped to individual containers or file shares where practical instead of granting access across entire Storage Accounts.
-
-## Encryption in Transit
-
-Secure transfer is required and TLS 1.2 is enforced.
-
-SMB encryption in transit was enabled for Azure Files.
-
-## Encryption at Rest
-
-Azure Storage encryption using Microsoft-managed keys protects stored data.
-
-Customer-managed keys were evaluated but not implemented because the laboratory does not have a compliance requirement requiring independent key ownership.
-
----
-
-# Encryption Design
-
-Microsoft-managed keys were selected for the current implementation.
-
-Azure therefore handles the encryption key lifecycle automatically.
-
-Customer-managed keys would be considered if Nivor Systems required:
-
-- Independent control over encryption keys
-- Custom key rotation policies
-- Regulatory or compliance requirements
-- Integration with Azure Key Vault or Managed HSM
-
-Customer-managed keys provide additional control but also introduce operational responsibility.
-
-Loss or deletion of a required encryption key could make encrypted data inaccessible.
-
-For a production CMK implementation, Key Vault protections such as soft delete and purge protection would therefore be critical.
-
----
-
-# Resource Tagging
-
-All Storage Accounts follow a consistent tagging model.
-
-| Tag | Example |
+| Blob age | Action |
 |---|---|
-| Company | Nivor Systems |
-| CostCenter | IT |
-| Environment | Production |
-| Owner | Nico |
-| Workload | Web / CorporateFiles / Backup |
+| 0–180 days | Remain in the configured online tier |
+| >180 days since modification | Move to Archive |
+| >730 days since modification | Delete |
 
-Using consistent tag keys allows resources to be filtered, governed and analyzed across the environment.
+![Backup lifecycle policy](images/05-backup-lifecycle-policy.png)
 
-Different values for `Workload` identify the purpose of each Storage Account without changing the organization's tagging standard.
+The policy automatically optimizes storage costs without requiring manual movement of old backup objects.
 
----
-
-# Resource Protection
-
-The production Resource Group is protected using a `CanNotDelete` resource lock.
-
-Because the lock is inherited by resources below the Resource Group, it prevented administrative operations that required deletion during the laboratory.
-
-The lock had to be deliberately removed, the required administrative change performed, and the lock recreated afterward.
-
-This demonstrated that resource locks operate independently from Azure RBAC permissions.
-
-Even highly privileged users cannot simply bypass an inherited delete lock.
+Archived blobs require **rehydration** before normal access, introducing additional retrieval time and cost. Archive storage is therefore appropriate only for data that is expected to be accessed rarely.
 
 ---
 
-# Cost Considerations
+# 5. Security Decisions
 
-The environment was designed to minimize laboratory costs.
+Several security decisions were applied across the storage environment.
 
-Measures include:
+### Microsoft Entra authentication
 
-- Standard storage instead of Premium where high performance is unnecessary
-- LRS for replaceable web assets
-- ZRS only where zone resilience provides business value
-- GRS only for critical backup data
-- Cold storage for rarely accessed backups
-- Archive for long-term retention
-- Lifecycle policies for automatic tier transitions
-- Small laboratory files only
-- Defender for Storage not enabled
-- Private Endpoints deferred until the networking implementation
-- Pay-as-you-go Azure Files instead of provisioned performance
+Where supported, Microsoft Entra ID authentication is preferred over storage account keys.
 
-A monthly Azure budget and cost alerts configured in the governance implementation remain active.
+This provides identity-based authorization and integrates storage access with Azure RBAC.
 
-Budget alerts provide notifications but do not automatically stop Azure resources.
+### Secure transfer
 
----
+Secure transfer is required to prevent unencrypted access to storage services.
 
-# Validation
+### Minimum TLS
 
-The implementation was validated through practical tests.
+TLS 1.2 is used as the minimum supported TLS version.
 
-### Blob Storage
+### Anonymous access
 
-- Confirmed `web-assets` container is private
-- Confirmed anonymous Blob URL access is denied
-- Confirmed RBAC-based Blob access
-- Confirmed `Web-Designers` receives Blob permissions through group membership
-- Confirmed RBAC scope is limited to `web-assets`
-- Generated and tested a User Delegation SAS
-- Confirmed SAS access works without enabling Shared Key
-- Configured and validated Lifecycle Management policy
+Anonymous access is disabled for workloads that do not explicitly require public access.
 
-### Azure Files
+The `web-assets` container therefore remains private.
 
-- Created `company-share`
-- Configured ZRS
-- Enabled File Share soft delete
-- Tested Azure Files data-plane authorization
-- Investigated SMB and Microsoft Entra authentication requirements
-- Created corporate directory structure
-- Returned Shared Key configuration to the hardened state after testing
+### Storage account keys
 
-### Backup Storage
+Shared-key access is avoided where identity-based authentication can be used.
 
-- Created private `general-backups` container
-- Uploaded test backup data
-- Configured GRS
-- Configured 30-day Blob and container soft delete
-- Enabled Blob versioning
-- Enabled version-level immutability support
-- Configured Cold → Archive → Delete lifecycle policy
-- Validated RBAC access at container scope
+### Encryption at rest
+
+Azure Storage encryption using Microsoft-managed keys is used for the current environment.
+
+Customer-managed keys could be introduced if future regulatory or organizational requirements require Nivor Systems to control the encryption key lifecycle.
 
 ---
 
-# Troubleshooting Experience
+# 6. Data Protection
 
-Several real administrative issues were encountered during the implementation.
+Storage configuration also considered recovery and accidental deletion.
 
-## Contributor Could Not Access Blob Data
+Depending on the workload, features such as:
 
-**Problem**
-
-The Azure resource could be administered, but Blob data could not be listed.
-
-**Cause**
-
-Azure `Contributor` grants management-plane permissions but does not automatically grant Blob data-plane access.
-
-**Resolution**
-
-Assigned `Storage Blob Data Contributor` at the appropriate container scope.
-
----
-
-## SAS Generation with Shared Key Disabled
-
-**Problem**
-
-A traditional SAS operation requiring the Storage Account Key could not be used because Shared Key authorization was disabled.
-
-**Resolution**
-
-Generated a User Delegation SAS using Microsoft Entra ID.
-
-This preserved the security decision to keep Storage Account Keys disabled.
-
----
-
-## Azure Files Access Through Microsoft Entra ID
-
-**Problem**
-
-Azure Files data could not initially be managed through the expected identity-based path despite Azure resource permissions.
-
-**Investigation**
-
-RBAC roles, File Share scope and Azure Files identity-based authentication requirements were reviewed.
-
-**Resolution**
-
-The difference between SMB identity authentication, data-plane RBAC and Azure Portal access was identified.
-
-Shared Key access was temporarily enabled to validate the laboratory File Share without deploying additional directory infrastructure.
-
----
-
-## Resource Lock Blocking Administrative Changes
-
-**Problem**
-
-An administrative change could not be completed despite privileged RBAC permissions.
-
-**Cause**
-
-The Storage Account inherited a `CanNotDelete` lock from `rg-production`.
-
-**Resolution**
-
-The lock was deliberately removed, the administrative change completed and the lock recreated.
-
----
-
-# Lessons Learned
-
-This implementation reinforced several important Azure administration concepts:
-
-1. Azure RBAC management roles and Storage data roles control different authorization planes.
-
-2. `Contributor` does not automatically provide access to Blob or File data.
-
-3. RBAC scope should be as narrow as practical.
-
-4. Microsoft Entra groups simplify permission management compared with direct user assignments.
-
-5. Storage Account Keys provide powerful access and should be avoided where identity-based authorization is available.
-
-6. User Delegation SAS provides temporary Blob access without requiring Shared Key authorization.
-
-7. Public network accessibility does not mean anonymous data access.
-
-8. LRS, ZRS and GRS solve infrastructure availability problems, not accidental data deletion.
-
-9. Soft delete and versioning provide recovery capabilities that redundancy alone does not provide.
-
-10. Archive storage reduces long-term costs but introduces recovery delay and retrieval costs.
-
-11. Lifecycle Management can automatically optimize storage costs based on data age.
-
-12. Resource locks operate independently from RBAC and can block privileged administrators from deleting protected resources.
-
-13. Azure Files authentication is more complex than simply assigning an RBAC role because SMB identity authentication can require additional directory configuration.
-
-14. Customer-managed encryption keys provide greater control but also increase operational responsibility.
-
-15. Security features should be enabled according to actual requirements rather than enabling every available option without understanding its operational impact.
-
----
-
-# If This Were Production
-
-A production implementation would extend this design with:
-
-- Private Endpoints for internal Storage Accounts
-- Public network access disabled where possible
-- Azure Private DNS integration
-- Microsoft Entra Kerberos or Active Directory integration for Azure Files
-- Conditional Access and MFA for privileged identities
-- Privileged Identity Management
-- Dedicated backup operator groups
-- Formal immutable backup retention policies
-- Azure Key Vault integration where CMK is required
-- Key Vault soft delete and purge protection
-- Azure Monitor alerts
-- Diagnostic settings and centralized logging
-- Storage access logging
-- More restrictive network firewall rules
-- Formal recovery testing
-- Defined RPO and RTO requirements
-- Infrastructure as Code deployment using Bicep
-
----
-
-# Skills Demonstrated
-
-This implementation demonstrates practical experience with:
-
-- Azure Storage Accounts
-- Azure Blob Storage
-- Azure Files
-- Storage redundancy
-- LRS
-- ZRS
-- GRS
-- Azure RBAC
-- Microsoft Entra ID
-- Management plane vs data plane authorization
-- Azure Storage data roles
-- User Delegation SAS
-- Storage Account Keys
-- Azure Lifecycle Management
-- Hot, Cool, Cold and Archive tiers
 - Blob soft delete
 - Container soft delete
 - Blob versioning
-- Blob immutability
-- Azure Files SMB concepts
-- Storage encryption
-- Azure resource locks
-- Azure resource tagging
-- Cost-aware Azure architecture
+
+can provide additional protection against accidental deletion or modification.
+
+These mechanisms complement — rather than replace — dedicated backup and lifecycle strategies.
 
 ---
 
-## Status
+# 7. Key Concepts Demonstrated
 
-**Implementation completed.**
+This implementation provides hands-on experience with:
 
-The storage foundation is ready to integrate with future Nivor Systems compute, networking, monitoring and backup workloads.
+- Azure Storage accounts
+- StorageV2
+- Azure Blob Storage
+- Azure Files
+- Containers
+- File shares
+- Access tiers
+- Hot / Cool / Cold / Archive concepts
+- Lifecycle management
+- Microsoft Entra authentication
+- Azure RBAC
+- Management plane vs data plane
+- Least-privilege access
+- Storage encryption
+- Secure transfer
+- TLS configuration
+- Soft delete
+- Blob versioning
+- Long-term retention
+- Cost optimization
+
+---
+
+# Result
+
+Nivor Systems now has three storage workloads with clearly separated responsibilities:
+
+```text
+Azure
+└── rg-production
+    │
+    ├── stnivweb01
+    │   └── web-assets
+    │       └── Web-Designers
+    │           └── Storage Blob Data Contributor
+    │
+    ├── stnivfiles01
+    │   └── company-share
+    │       ├── IT/
+    │       ├── projects/
+    │       ├── shared/
+    │       └── templates/
+    │
+    └── stnivbackup01
+        └── general-backups
+            └── Lifecycle Policy
+                ├── >180 days → Archive
+                └── >730 days → Delete
+```
+
+The implementation separates web assets, collaborative file storage and long-term backups while applying identity-based authorization, least privilege, data protection and lifecycle-based cost optimization.
