@@ -1,12 +1,14 @@
-# Identity & Governance
+# 01 — Identity & Governance
 
-This implementation establishes the identity, governance and access control foundation for the Nivor Systems Azure environment.
+[Back to the project overview](../../README.md)
+
+I started Nivor Systems with identity and governance because every later resource would inherit decisions made here.
 
 ---
 
-# Business Scenario
+## Business scenario
 
-Before deploying production workloads, Nivor Systems required a secure and scalable Azure foundation.
+Before deploying the rest of the lab, Nivor Systems needed a consistent identity and governance foundation.
 
 The primary objectives were:
 
@@ -19,7 +21,7 @@ The primary objectives were:
 
 ---
 
-# Architecture Overview
+## What I configured
 
 The following components were implemented:
 
@@ -35,7 +37,7 @@ The following components were implemented:
 
 ---
 
-# Identity Design
+## Identity design
 
 RBAC permissions are assigned to Microsoft Entra security groups instead of individual users.
 
@@ -44,13 +46,13 @@ RBAC permissions are assigned to Microsoft Entra security groups instead of indi
 | Azure-Admins | Contributor | Subscription | Manage Azure resources without modifying access permissions |
 | IT-Support | Reader | Subscription | Inspect Azure resources without making changes |
 
-This approach simplifies administration while following Microsoft's recommended RBAC practices.
+This keeps access changes tied to group membership instead of scattering role assignments across individual users.
 
-![RBAC Assignments](./images/rbac-assignments.png)
+![RBAC assignments](images/02-rbac-assignments.png)
 
 ---
 
-# Governance
+## Governance
 
 The following governance controls were implemented:
 
@@ -60,13 +62,13 @@ The following governance controls were implemented:
 - Standardized resource naming
 - Production Resource Group located in **Switzerland North**
 
-![Budget Configuration](./images/budget.png)
+![Budget configuration](images/03-budget-alerts.png)
 
-![Azure Policy](./images/policy.png)
+![Azure Policy assignment](images/04-policy-assignment.png)
 
 ---
 
-# Resource Classification
+## Resource classification
 
 Resources are classified using Azure Tags.
 
@@ -80,11 +82,11 @@ Current tags include:
 
 Azure Resource Graph was used to validate the tagging strategy across the environment.
 
-![Resource Graph](./images/resource-graph.png)
+![Azure Resource Graph query](images/05-resource-graph.png)
 
 ---
 
-# Microsoft Entra ID
+## Microsoft Entra ID
 
 Administrative access is managed using dedicated security groups.
 
@@ -95,13 +97,15 @@ Groups created:
 
 This design allows administrators to grant or revoke Azure permissions simply by modifying group membership.
 
-![Microsoft Entra Groups](./images/entra-groups.png)
+![Azure Admins group](images/01.1-entra-groups-1.png)
+
+![IT Support group](images/01.2-entra-groups-2.png)
 
 ---
 
-# Technical Decisions
+## Technical decisions
 
-## Contributor instead of Owner
+### Contributor instead of Owner
 
 The **Contributor** role was assigned to the Azure-Admins group instead of **Owner**.
 
@@ -111,7 +115,7 @@ Only the subscription owner retains Owner permissions.
 
 ---
 
-## Group-Based Access Control
+### Group-based access control
 
 RBAC permissions are assigned to Microsoft Entra security groups rather than directly to individual users.
 
@@ -119,15 +123,15 @@ This improves scalability and simplifies permission management as the organizati
 
 ---
 
-## Subscription Scope
+### Subscription scope
 
 Role assignments were configured at the subscription scope because the current environment consists of a single Azure subscription.
 
-In a production environment with multiple workloads, narrower scopes (such as Resource Groups) would typically be preferred.
+In a larger environment with multiple workloads, I would start with narrower scopes, such as resource groups, and widen them only when the responsibility really crosses those boundaries.
 
 ---
 
-# Security Considerations
+## Security considerations
 
 The following security principles were applied:
 
@@ -140,7 +144,7 @@ The following security principles were applied:
 
 ---
 
-# Cost Management
+## Cost management
 
 The governance layer itself generates little or no Azure consumption cost.
 
@@ -152,7 +156,7 @@ Budget alerts notify administrators when spending reaches predefined thresholds.
 
 ---
 
-# Validation
+## Validation
 
 The following configuration was successfully validated:
 
@@ -166,9 +170,9 @@ The following configuration was successfully validated:
 
 ---
 
-# Lessons Learned
+## What I learned
 
-This implementation reinforced several key Azure administration concepts:
+The main lesson was that identity, authorization, compliance and cost controls solve different problems even when they appear together in the same portal:
 
 - Microsoft Entra roles and Azure RBAC roles manage different administrative planes.
 - RBAC permissions are inherited through the Azure resource hierarchy.
@@ -180,7 +184,7 @@ This implementation reinforced several key Azure administration concepts:
 
 ---
 
-# Production Improvements
+## What I would change in a larger environment
 
 If this environment were deployed in production, the following improvements would be recommended:
 

@@ -1,8 +1,10 @@
 # 05 — Azure App Service
 
+[Back to the project overview](../../README.md)
+
 ## Overview
 
-This implementation demonstrates the deployment and configuration of an Azure App Service environment for Nivor Systems.
+I used App Service to move beyond virtual machines and see what Azure manages for me when the workload runs on a platform service.
 
 The lab focused on understanding the relationship between Web Apps and App Service Plans, application configuration, managed identities, deployment slots, slot-specific settings, deployment swaps, and scaling options.
 
@@ -180,7 +182,7 @@ A swap operation was performed between:
 staging → production
 ```
 
-This demonstrated the deployment workflow commonly used with App Service:
+The swap followed this App Service deployment flow:
 
 ```text
 Deploy
@@ -240,15 +242,15 @@ The selected Premium v3 plan supported multiple instances.
 
 Three scaling approaches were reviewed:
 
-### Manual
+#### Manual
 
 A fixed number of instances is configured manually.
 
-### Automatic
+#### Automatic
 
 Azure manages scale-out and scale-in based on application traffic.
 
-### Rules Based
+#### Rules based
 
 Custom autoscale rules can be defined using metrics or schedules.
 
@@ -330,11 +332,11 @@ This conflicted with the creation of a staging environment.
 
 The lab resource group was therefore excluded from the restrictive policy assignment.
 
-This demonstrated an important governance consideration:
+The failed slot creation exposed a governance problem I had not considered when writing the original Policy:
 
 > A technically valid Azure Policy can create operational problems when its scope or required values are too restrictive.
 
-A more flexible enterprise design would enforce the presence of an `Environment` tag while allowing approved values such as:
+A more flexible design would enforce the presence of an `Environment` tag while allowing approved values such as:
 
 ```text
 Production
@@ -366,19 +368,19 @@ The cleanup removed the App Service Plan and therefore stopped the associated co
 
 ### App Service Overview
 
-![App Service Overview](screenshots/01-app-service-overview.png)
+![App Service overview](images/01-app-service-overview.png)
 
 Shows the deployed Linux Web App, runtime, App Service Plan, region, and hosting configuration.
 
 ### Deployment Slots
 
-![Deployment Slots](screenshots/02-deployment-slots.png)
+![Deployment slots](images/02-deployment-slots.png)
 
 Shows the production and staging slots running under the same App Service Plan.
 
 ### Scale Out Options
 
-![Scale Out Options](screenshots/03-scale-out-options.png)
+![Scale-out options](images/03-scale-out-options.png)
 
 Shows the App Service Plan scaling configuration and the Manual, Automatic, and Rules Based scaling methods.
 
@@ -416,8 +418,8 @@ This removed the Web App, deployment slots, and App Service Plan to prevent ongo
 
 ---
 
-## Result
+## What I took from this lab
 
-The lab successfully demonstrated the deployment and operational management of an Azure App Service application.
+The useful part was not just creating a Web App. I had to connect the App Service Plan, slots, sticky settings, managed identity, scaling controls and Azure Policy into one picture.
 
-The implementation covered application hosting, environment separation, identity, deployment strategies, scaling, governance interaction, and resource lifecycle management using a production-oriented Azure administration workflow.
+I deployed one instance, performed a slot swap and then removed the paid resources. I reviewed the scaling and private-networking options, but I did not run a load test, configure autoscale rules or deploy VNet Integration and a Private Endpoint. Those are design options discussed above, not hidden parts of the implementation.

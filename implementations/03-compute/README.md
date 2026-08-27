@@ -1,12 +1,14 @@
 # 03 – Azure Compute Infrastructure
 
+[Back to the project overview](../../README.md)
+
 ## Overview
 
-This implementation focuses on deploying and managing Azure Virtual Machine infrastructure for **Nivor Systems**.
+I used this phase to see what sits around an Azure VM once it is treated as infrastructure rather than as a single portal object.
 
-The objective was to build a production-oriented Linux virtual machine environment while applying concepts related to networking, managed disks, security, resource governance, availability, backup and disaster recovery.
+I focused on networking, managed disks, security, governance, availability and recovery around a Linux virtual machine.
 
-The lab also included a complete snapshot and disk recovery workflow to simulate a maintenance rollback scenario.
+The lab also included a snapshot-to-disk recovery exercise to simulate the first part of a maintenance rollback.
 
 ---
 
@@ -121,7 +123,7 @@ Configuration:
 
 The recovery disk was intentionally created using a low-cost storage tier because it was only required to validate the recovery workflow.
 
-In a real production recovery scenario, the disk tier would be selected according to workload performance requirements.
+In a larger environment, the disk tier would be selected according to workload performance requirements.
 
 ---
 
@@ -138,7 +140,7 @@ The following recovery procedure was tested:
 7. Validate the recovered disk configuration.
 8. Remove temporary recovery resources after validation.
 
-This demonstrates a basic rollback mechanism that could be used before risky maintenance operations.
+Validation stopped after the new managed disk was created and inspected. I did not attach it to a replacement VM and boot the recovered operating system, so this proves the snapshot-to-disk path rather than a complete service recovery.
 
 ---
 
@@ -150,7 +152,7 @@ Azure availability concepts were also evaluated during the implementation.
 
 Availability Zones provide physical separation between datacenters within an Azure region.
 
-For production workloads requiring higher availability, multiple VM instances can be distributed across zones so that the failure of one datacenter does not necessarily interrupt the complete service.
+For workloads requiring higher availability, multiple instances can be distributed across zones so that the failure of one datacenter does not necessarily interrupt the complete service. A single zonal VM does not provide that resilience by itself.
 
 ### Virtual Machine Scale Sets
 
@@ -246,7 +248,7 @@ Azure correctly blocked the deletion.
 
 After validating the protection mechanism, the lock was intentionally removed and the temporary compute resources were deleted.
 
-This demonstrated an important operational principle:
+The lock test made one distinction much clearer:
 
 > RBAC controls **who can perform an operation**, while resource locks can protect resources against accidental modification or deletion even when the user has sufficient RBAC permissions.
 
@@ -271,9 +273,9 @@ The existing production VNet and storage accounts were preserved for future infr
 
 ---
 
-## Key Concepts Demonstrated
+## What I practised and reviewed
 
-This implementation demonstrates practical knowledge of:
+Deployed and validated in the lab:
 
 - Azure Virtual Machines
 - Managed Disks
@@ -281,46 +283,45 @@ This implementation demonstrates practical knowledge of:
 - Disk performance tiers
 - Incremental snapshots
 - Disk recovery from snapshots
-- Availability Zones
-- Virtual Machine Scale Sets
-- Application Health Monitoring
-- Automatic Instance Repair
 - Trusted Launch
-- Microsoft Entra ID authentication
 - Private VM networking
 - Resource Locks
 - Azure Tags
 - Cost-conscious infrastructure management
 
+Reviewed in the portal but not deployed:
+
+- Availability Zone placement options
+- Virtual Machine Scale Sets
+- application health monitoring
+- automatic instance repair
+- Microsoft Entra ID authentication for VMSS instances
+
 ---
 
-## Screenshots
+## Evidence
 
-Evidence captured during the implementation includes:
+| # | Evidence | What it shows |
+|---|---|---|
+| 01 | [Compute resources](images/01-rg-production-resources-overview.png) | VM, disks, snapshot and related lab resources |
+| 02 | [Linux VM overview](images/02-server-nivor-1-overview.png) | Private addressing, size, region and Trusted Launch |
+| 03 | [Managed disks](images/03-server-nivor-1-disks.png) | OS and attached data-disk configuration |
+| 04 | [Incremental snapshot](images/04-snapshot-os-premaintenance-overview.png) | Pre-maintenance OS snapshot |
+| 05 | [Recovery disk](images/05-recovery-disk-overview.png) | Disk created from the snapshot for the recovery exercise |
 
-```text
-screenshots/
-├── 01-rg-production-compute-resources.png
-├── 02-vm-overview.png
-├── 03-vm-managed-disks.png
-├── 04-os-snapshot.png
-├── 05-recovery-disk.png
-└── 06-resource-lock-delete-test.png
-```
-
-These screenshots document the deployed architecture, storage configuration, snapshot recovery process and governance controls.
+The resource-lock test is described above but is not presented as screenshot evidence because no matching image is retained in this repository.
 
 ---
 
 ## Lessons Learned
 
-This implementation reinforced several important Azure administration concepts.
+The VM itself was only one part of the exercise. The network interface, NSG, disks, snapshot and recovery disk all had their own lifecycle and security choices.
 
-A VM is not a single isolated Azure resource. Its operation depends on multiple components such as virtual networks, network interfaces, network security groups and managed disks.
+A VM depends on several components such as virtual networks, network interfaces, network security groups and managed disks.
 
 Snapshots provide a useful recovery mechanism before maintenance operations, but they should not automatically be considered a complete backup strategy.
 
-High availability also requires architectural planning. Availability Zones protect against datacenter-level failures, while VM Scale Sets add horizontal scaling, health monitoring and automatic instance replacement.
+High availability also requires architectural planning. Availability Zones can reduce datacenter-level risk when a workload is distributed correctly, while VM Scale Sets can add horizontal scaling, health monitoring and automatic instance replacement.
 
 Finally, governance controls such as RBAC, tags and resource locks solve different problems and should be combined rather than treated as interchangeable security mechanisms.
 

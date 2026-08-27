@@ -1,8 +1,10 @@
 # 07 — Azure Virtual Networking
 
-This implementation builds the network foundation for the Nivor Systems Azure environment.
+[Back to the project overview](../../README.md)
 
-The objective was to design a segmented Azure network using a hub-and-spoke-inspired architecture, control communication between network tiers with Network Security Groups, provide private DNS resolution, and configure a Standard Azure Load Balancer for the web tier.
+Networking is the area where I already had the strongest base, so this phase was about translating familiar ideas such as address planning, segmentation, filtering and DNS into Azure resources.
+
+I wanted to build a segmented, hub-and-spoke-inspired network, control communication between tiers with NSGs, add private DNS and configure a Standard Load Balancer for the web tier.
 
 The lab focuses on practical Azure networking concepts covered by the AZ-104 exam while applying infrastructure design principles such as segmentation, least privilege, private communication, and controlled traffic flows.
 
@@ -264,9 +266,9 @@ Internet ──► LB ───────┤
                           HTTPS/443
 ```
 
-Only healthy backend instances should receive new load-balanced traffic.
+With real backend instances, only healthy members should receive new load-balanced traffic.
 
-No compute instances were deployed as part of this lab. The networking and load-balancing configuration was implemented without creating unnecessary VM resources.
+No compute instances were deployed as part of this lab. I created the load-balancing objects and checked their configuration, but I did not validate backend health or traffic distribution. This kept the networking exercise inexpensive without pretending it was an end-to-end application test.
 
 ![Azure Load Balancer](images/08-load-balancer.png)
 
@@ -318,9 +320,9 @@ The Standard SKU was selected to practice the current Azure load-balancing model
 
 ---
 
-## Skills Practiced
+## Skills Practised
 
-This implementation provided hands-on experience with:
+I practised:
 
 - Azure Virtual Networks
 - IPv4 address planning
@@ -346,13 +348,13 @@ This implementation provided hands-on experience with:
 
 ## Result
 
-The final environment provides a segmented Azure network foundation with:
+The configured environment contains:
 
 - dedicated management and production networks,
 - isolated web and data tiers,
 - private connectivity through VNet Peering,
 - controlled inter-subnet communication using NSGs,
 - private DNS-based service discovery,
-- and a Standard Azure Load Balancer architecture for the web tier.
+- and a Standard Azure Load Balancer configuration for the web tier.
 
-The implementation demonstrates both AZ-104 networking concepts and the design principles used to build secure and maintainable cloud infrastructure.
+The VNets, peering, NSGs and private DNS are evidenced above. The Load Balancer evidence covers its configuration only because the lab did not include compute backends.

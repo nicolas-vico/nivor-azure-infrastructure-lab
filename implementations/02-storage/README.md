@@ -1,6 +1,8 @@
 # 02 — Azure Storage
 
-This implementation extends the Nivor Systems Azure environment with a storage architecture designed around three different business requirements:
+[Back to the project overview](../../README.md)
+
+I used the storage phase to answer a simple question: should three very different workloads share the same account just because they all store data? I separated them into:
 
 - Web application assets
 - Internal company file sharing
@@ -28,9 +30,9 @@ All storage accounts are deployed in:
 
 ---
 
-# 1. Web Assets Storage
+## 1. Web assets storage
 
-## Objective
+### Objective
 
 Nivor Systems requires centralized object storage for assets used by web workloads.
 
@@ -50,7 +52,7 @@ Anonymous public access is not required. Access to the data should instead be co
 
 ---
 
-## RBAC
+### RBAC
 
 A Microsoft Entra security group named:
 
@@ -66,13 +68,13 @@ at the **container scope**.
 
 This allows members of the Web-Designers group to read, create, modify and delete blob data without granting unnecessary permissions over the entire storage account.
 
-This implementation demonstrates the principle of **least privilege** by assigning data-plane permissions at the lowest practical scope.
+Keeping the role at container scope let me practise least privilege instead of granting access to the whole account for convenience.
 
 ---
 
-# 2. Company File Share
+## 2. Company file share
 
-## Objective
+### Objective
 
 Nivor Systems requires a centralized file share for internal company documents.
 
@@ -100,7 +102,7 @@ Azure Files was selected because the workload represents a traditional hierarchi
 
 ---
 
-## Identity and RBAC
+### Identity and RBAC
 
 A Microsoft Entra security group named:
 
@@ -125,9 +127,9 @@ This distinction is important in Azure:
 
 ---
 
-# 3. Backup Storage
+## 3. Backup storage
 
-## Objective
+### Objective
 
 Nivor Systems requires inexpensive storage for backups that are rarely accessed but must remain available for long-term retention.
 
@@ -147,7 +149,7 @@ The workload uses a lower-cost access tier because frequent access is not expect
 
 ---
 
-# 4. Lifecycle Management
+## 4. Lifecycle management
 
 Long-term backup data should not remain indefinitely in more expensive storage tiers.
 
@@ -177,7 +179,7 @@ Archived blobs require **rehydration** before normal access, introducing additio
 
 ---
 
-# 5. Security Decisions
+## 5. Security decisions
 
 Several security decisions were applied across the storage environment.
 
@@ -213,25 +215,25 @@ Customer-managed keys could be introduced if future regulatory or organizational
 
 ---
 
-# 6. Data Protection
+## 6. Data protection
 
 Storage configuration also considered recovery and accidental deletion.
 
-Depending on the workload, features such as:
+The lab configuration included:
 
 - Blob soft delete
 - Container soft delete
 - Blob versioning
 
-can provide additional protection against accidental deletion or modification.
+These features provide additional protection against accidental deletion or modification.
 
 These mechanisms complement — rather than replace — dedicated backup and lifecycle strategies.
 
 ---
 
-# 7. Key Concepts Demonstrated
+## 7. What I practised
 
-This implementation provides hands-on experience with:
+This phase gave me hands-on practice with:
 
 - Azure Storage accounts
 - StorageV2
@@ -256,7 +258,7 @@ This implementation provides hands-on experience with:
 
 ---
 
-# Result
+## Result
 
 Nivor Systems now has three storage workloads with clearly separated responsibilities:
 

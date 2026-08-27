@@ -1,10 +1,12 @@
-# Azure Bicep Infrastructure as Code Lab
+# 04 — Bicep & Infrastructure as Code
+
+[Back to the project overview](../../README.md)
 
 ## Overview
 
-This lab demonstrates the deployment of Azure networking infrastructure using **Bicep** and Azure Resource Manager.
+After creating several resources through the portal, I wanted to describe one of them as code and see how Azure behaved when the declared state met an existing Policy assignment.
 
-The objective was to replace manual resource creation with a declarative Infrastructure as Code workflow while validating parameterization, resource dependencies, Azure Policy enforcement, outputs, and deployment idempotency.
+The goal was to replace a manual deployment with a declarative workflow and check parameters, dependencies, Policy enforcement, outputs and idempotency for myself.
 
 ## Architecture
 
@@ -47,7 +49,7 @@ The Bicep template was compiled using Azure Cloud Shell:
 az bicep build --file main.bicep
 ```
 
-This generated the corresponding ARM JSON template and demonstrated the deployment flow:
+This generated the corresponding ARM JSON template and made the deployment flow visible:
 
 ```text
 Bicep
@@ -90,7 +92,7 @@ The initial deployment was blocked by an existing Azure Policy requiring specifi
 
 The Bicep template was updated to include the required governance tags before deployment.
 
-This demonstrated that Infrastructure as Code deployments remain subject to Azure governance controls:
+The failure confirmed that Infrastructure as Code deployments remain subject to Azure governance controls:
 
 ```text
 Bicep deployment
@@ -113,7 +115,7 @@ vnetName
 vnetResourceId
 ```
 
-This demonstrates how Bicep outputs can expose information from deployed resources for use by other templates, modules, or deployment processes.
+Bicep outputs expose information from deployed resources for use by other templates, modules or deployment processes.
 
 ## Idempotency Test
 
@@ -121,23 +123,23 @@ The same Bicep deployment was executed a second time without modifying the templ
 
 Azure did not create duplicate resources because the existing infrastructure already matched the declared desired state.
 
-This demonstrated the idempotent nature of declarative Infrastructure as Code deployments.
+Repeating the command helped me check the idempotent behaviour of the declarative deployment.
 
 ## Deployment Evidence
 
 ### Virtual Network
 
-![Bicep VNet deployment](screenshots/bicep-vnet-deployment.png)
+![Bicep VNet deployment](images/01-bicep-vnet-deployment.png)
 
 The deployed VNet uses the `10.10.0.0/16` address space in Switzerland North.
 
 ### Subnet
 
-![Bicep subnet deployment](screenshots/bicep-subnet-deployment.png)
+![Bicep subnet deployment](images/02-bicep-subnet-deployment.png)
 
 The `snet-servers-01` subnet was successfully deployed with the `10.10.1.0/24` prefix.
 
-## Skills Demonstrated
+## What I practised
 
 - Azure Bicep
 - Infrastructure as Code (IaC)

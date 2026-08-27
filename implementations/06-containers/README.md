@@ -1,13 +1,15 @@
 # 06 — Azure Containers
 
+[Back to the project overview](../../README.md)
+
 ## Overview
 
-This implementation explores two serverless container hosting options in Microsoft Azure:
+I compared two Azure container services using the same small NGINX workload:
 
 - **Azure Container Instances (ACI)**
 - **Azure Container Apps (ACA)**
 
-The objective was to deploy and validate containerized workloads while understanding the operational differences between running a simple standalone container with ACI and running an application-oriented container workload with Azure Container Apps.
+The point was not the NGINX page itself. I wanted to understand the operational difference between a standalone container in ACI and an application-oriented workload in Azure Container Apps.
 
 An NGINX container was used as the test workload.
 
@@ -62,9 +64,9 @@ Region:
 
 ---
 
-# Azure Container Instances
+## Azure Container Instances
 
-## Deployment
+### Deployment
 
 The first workload was deployed using **Azure Container Instances**.
 
@@ -84,11 +86,11 @@ The deployed instance used:
 
 The container successfully entered the **Running** state.
 
-![Azure Container Instance overview](images/01-aci-container-overview.png)
+![Azure Container Instance overview](images/01-aci-overview.png)
 
 ---
 
-## Public Connectivity Validation
+### Public connectivity validation
 
 NGINX was first validated from inside the running container using the loopback interface.
 
@@ -106,7 +108,7 @@ curl http://<PUBLIC-IP>
 
 The request successfully returned the default NGINX page.
 
-![ACI public access validation](images/02-aci-public-access-test.png)
+![ACI public access validation](images/02-aci-public-http-validation.png)
 
 This validated the complete traffic path:
 
@@ -124,7 +126,7 @@ Container
 NGINX
 ```
 
-### Key observation
+#### Key observation
 
 The container can be healthy internally while still being unreachable externally.
 
@@ -132,7 +134,7 @@ Internal application availability and external network reachability are separate
 
 ---
 
-# Azure Container Apps
+## Azure Container Apps
 
 The same NGINX workload was then deployed using **Azure Container Apps**.
 
@@ -148,7 +150,7 @@ Unlike ACI, Container Apps provides additional application-platform capabilities
 
 ---
 
-## Container Apps Environment
+### Container Apps environment
 
 A dedicated Container Apps environment was created:
 
@@ -166,7 +168,7 @@ The deployment also integrated with Azure monitoring capabilities through Log An
 
 ---
 
-# Ingress Configuration
+### Ingress configuration
 
 External ingress was enabled for the Container App.
 
@@ -201,7 +203,7 @@ Azure Container Apps exposes a managed application URL while forwarding incoming
 
 ---
 
-# Public Application Validation
+### Public application validation
 
 The generated Container Apps application URL was opened from an external browser.
 
@@ -215,11 +217,11 @@ The NGINX welcome page loaded successfully, confirming that:
 
 ![NGINX running through Azure Container Apps](images/04-container-app-nginx-public.png)
 
-This demonstrated the difference between directly exposing a container through an ACI public IP and publishing an application through the managed ingress layer provided by Azure Container Apps.
+That made the difference clear between directly exposing a container through an ACI public IP and publishing an application through the managed ingress layer provided by Azure Container Apps.
 
 ---
 
-# Autoscaling
+### Autoscaling
 
 One of the main capabilities tested with Azure Container Apps was automatic replica scaling.
 
@@ -264,7 +266,7 @@ With a minimum replica count of `0`, the application is able to scale down when 
 
 The maximum of `10` establishes an upper boundary for automatic scaling.
 
-### Why this matters
+#### Why this matters
 
 ACI primarily executes individual container workloads.
 
@@ -274,7 +276,7 @@ This makes Container Apps more appropriate for HTTP services and applications wi
 
 ---
 
-# Revisions and Replicas
+### Revisions and replicas
 
 Azure Container Apps uses **revisions** to represent immutable versions of an application.
 
@@ -318,7 +320,7 @@ In this lab, the active revision received **100% of application traffic**.
 
 ---
 
-# ACI vs Azure Container Apps
+## ACI vs Azure Container Apps
 
 The lab demonstrated that both services can execute containers without requiring direct VM management, but they solve different operational problems.
 
@@ -338,9 +340,9 @@ The lab demonstrated that both services can execute containers without requiring
 
 ---
 
-# Service Selection
+## Service selection
 
-## When I would choose Azure Container Instances
+### When I would choose Azure Container Instances
 
 ACI is appropriate when the requirement is primarily:
 
@@ -358,7 +360,7 @@ The main advantage is simplicity.
 
 ---
 
-## When I would choose Azure Container Apps
+### When I would choose Azure Container Apps
 
 Container Apps is more appropriate when the requirement becomes:
 
@@ -377,7 +379,7 @@ The additional platform features reduce the amount of infrastructure that must b
 
 ---
 
-# Operational Validation
+## Operational validation
 
 The implementation was validated at multiple layers rather than relying only on the Azure Portal deployment status.
 
@@ -417,7 +419,7 @@ External application availability
 
 ---
 
-# Security Considerations
+## Security considerations
 
 Public ingress was intentionally enabled because external connectivity was part of the lab objective.
 
@@ -438,7 +440,7 @@ Public exposure in this implementation was therefore a deliberate lab configurat
 
 ---
 
-# Cost Management and Cleanup
+## Cost management and cleanup
 
 The implementation was created as a temporary lab environment.
 
@@ -458,9 +460,9 @@ Dedicated resource groups make lab cleanup easier and reduce the risk of leaving
 
 ---
 
-# Key Takeaways
+## Key takeaways
 
-This implementation reinforced several Azure container concepts:
+The main things I took from the comparison were:
 
 1. A running container does not automatically imply external connectivity.
 2. Container health and network reachability should be tested independently.
@@ -479,8 +481,8 @@ This implementation reinforced several Azure container concepts:
 
 | # | Evidence | Description |
 |---|---|---|
-| 01 | [ACI Overview](images/01-aci-container-overview.png) | Running Azure Container Instance and resource configuration |
-| 02 | [ACI Public Access](images/02-aci-public-access-test.png) | External HTTP validation using the ACI public endpoint |
+| 01 | [ACI Overview](images/01-aci-overview.png) | Running Azure Container Instance and resource configuration |
+| 02 | [ACI Public Access](images/02-aci-public-http-validation.png) | External HTTP validation using the ACI public endpoint |
 | 03 | [Container App Overview](images/03-container-app-overview.png) | Running Container App, environment and application endpoint |
 | 04 | [Container App Public Endpoint](images/04-container-app-nginx-public.png) | NGINX successfully served through managed Container Apps ingress |
 | 05 | [Autoscaling](images/05-container-app-autoscaling.png) | HTTP scaling rule and 0–10 replica configuration |

@@ -1,0 +1,22 @@
+# Local operating-system and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Local Azure state and credentials
+.azure/
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+
+# Local deployment parameter files
+*.parameters.local.json
+*.local.bicepparam
+
+# Generated output
+*.log
+bin/
+obj/
+
