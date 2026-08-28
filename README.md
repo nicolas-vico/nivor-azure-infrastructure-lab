@@ -12,7 +12,7 @@ My strongest technical base is networking, so Azure networking felt familiar at 
 
 ## Current status
 
-The implementation is complete across the planned AZ-104 domains. The final monitoring and recovery write-up is still being organised, so it is marked separately rather than filled with claims that are not yet documented.
+The planned implementation is now complete across all eight AZ-104 domains. Each module includes the decisions, evidence and limitations from the lab; the final module closes the project with monitoring, alerting and a real VM backup-and-restore test.
 
 | # | Implementation | Status | What it proves |
 |---|---|---|---|
@@ -23,7 +23,7 @@ The implementation is complete across the planned AZ-104 domains. The final moni
 | 05 | [Azure App Service](implementations/05-app-service/README.md) | Complete | Linux web app, slots, managed identity, swaps and scaling options |
 | 06 | [Azure Containers](implementations/06-containers/README.md) | Complete | ACI, Container Apps, ingress, revisions, replicas and autoscaling |
 | 07 | [Azure Networking](implementations/07-networking/README.md) | Complete | Hub-and-spoke design, peering, NSGs, private DNS and load balancing |
-| 08 | [Monitoring & Recovery](implementations/08-monitoring-recovery/README.md) | Complete — write-up in progress | Azure monitoring, alerting, backup and recovery validation |
+| 08 | [Monitoring & Recovery](implementations/08-monitoring-recovery/README.md) | Complete | Log Analytics, KQL, alerting and an end-to-end VM backup and restore |
 
 The [implementation log](implementations/CHANGELOG.md) gives a shorter chronological view.
 
@@ -104,8 +104,6 @@ Each completed module contains its own explanation and evidence. The detailed pa
 I want the boundaries of the project to be easy to verify.
 
 **Implemented and evidenced:** the Azure resources and configuration shown in the individual modules and screenshots.
-
-**Implemented but still being documented:** the final monitoring and recovery domain.
 
 **Explored rather than deployed:** some alternatives such as Virtual Machine Scale Sets and private application connectivity. They are discussed because I evaluated them, but they are not presented as completed deployments.
 

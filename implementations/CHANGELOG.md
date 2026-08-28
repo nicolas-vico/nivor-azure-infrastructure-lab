@@ -54,8 +54,12 @@ This is the short chronological record of the Nivor Systems lab. The module page
 - Added a private DNS zone and linked both VNets.
 - Configured a Standard Load Balancer without compute backends and documented that test boundary.
 
-## 08 — Monitoring & Recovery · Complete; write-up in progress
+## 08 — Monitoring & Recovery · Complete
 
-- Completed the planned AZ-104 monitoring and recovery practice.
-- The resource inventory, validation evidence and lessons are being organised in the module page.
-- No undocumented configuration is described as evidence until that write-up is finished.
+- Sent Storage Account metrics to Log Analytics through a diagnostic setting.
+- Used KQL to inspect raw `AzureMetrics` records, summarise the dataset and group transactions over time.
+- Worked around an unhelpful Metrics Explorer result by validating the same telemetry directly in Log Analytics.
+- Triggered an Azure Monitor metric alert and received the linked email notification.
+- Protected a private Trusted Launch Ubuntu VM with an Enhanced Azure Backup policy.
+- Created a file-system-consistent recovery point and completed a full VM restore.
+- Verified the original and restored VMs side by side, then removed the temporary recovery resources.
