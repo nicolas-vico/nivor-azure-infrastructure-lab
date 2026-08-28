@@ -12,7 +12,7 @@ My strongest technical base is networking, so Azure networking felt familiar at 
 
 ## Current status
 
-The planned implementation is now complete across all eight AZ-104 domains. Each module includes the decisions, evidence and limitations from the lab; the final module closes the project with monitoring, alerting and a real VM backup-and-restore test.
+The planned lab is now complete across all eight implementation modules aligned with the AZ-104 syllabus. Each module includes the decisions, evidence and limitations from the lab; the final module closes the project with monitoring, alerting and a real VM backup-and-restore test.
 
 | # | Implementation | Status | What it proves |
 |---|---|---|---|

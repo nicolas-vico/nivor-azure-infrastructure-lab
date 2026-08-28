@@ -101,7 +101,7 @@ That was probably the most useful monitoring lesson in this module: when one vie
 
 ## Alerting and notification
 
-Once I could see transaction data, I created the alert rule `alert-stnivweb01-transactions`. For this short lab, the threshold was deliberately set above zero so that I could generate activity and verify the complete notification route without waiting for a natural incident.
+Once I could see transaction data, I created the alert rule `alert-stnivweb01-transactions`. For this short lab, the alert was deliberately configured to trigger when the transaction count was greater than zero. This allowed me to generate activity and verify the complete notification route without waiting for a natural incident.
 
 The alert fired as informational severity after the Storage Account recorded transactions:
 
